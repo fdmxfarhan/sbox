@@ -1,0 +1,32 @@
+{
+    "text_entry_line":
+    {
+        "colours":
+        {
+            "dark_bg": "#FFFFFF",
+            "selected_bg": "#FFFFFF",
+            "normal_text": "#AAAAAA",
+            "selected_text": "#FFFFFF",
+            "normal_border": "#FFFFFF"
+        },
+        "font":
+        {
+            "name": "montserrat",
+            "size": "12",
+            "bold": "0",
+            "italic": "1",
+            "regular_path": "data/fonts/Montserrat-Regular.ttf",
+            "bold_path": "data/fonts/Montserrat-Bold.ttf",
+            "italic_path": "data/fonts/Montserrat-Italic.ttf",
+            "bold_italic_path": "data/fonts/Montserrat-BoldItalic.ttf"
+        },
+        "misc":
+        {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": 5,
+            "border_width": "2",
+            "shadow_width": "2",
+            "padding": "6,4"
+        }
+    }
+}

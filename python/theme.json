@@ -24,5 +24,24 @@
             "filled_bar":"#f4251b",
             "unfilled_bar":"#CCCCCC"
         }
-    }
+    },
+    "text_entry_line":
+     {
+         "colours":
+         {
+             "dark_bg": "#FFFFFF",
+             "selected_bg": "#FFFFFF",
+             "normal_text": "#AAAAAA",
+             "selected_text": "#FFFFFF",
+             "normal_border": "#FFFFFF"
+         },
+         "misc":
+         {
+             "shape": "rounded_rectangle",
+             "shape_corner_radius": 5,
+             "border_width": "2",
+             "shadow_width": "2",
+             "padding": "6,4"
+         }
+     }
 }

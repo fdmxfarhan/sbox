@@ -1,57 +1,14 @@
-import pygame
-import pygame_gui
+"""
+Copyright 2017, Silas Gyger, silasgyger@gmail.com, All rights reserved.
+Borrowed from https://github.com/Nearoo/pygame-text-input under the MIT license.
+"""
+
 import os.path
+
 import pygame
 import pygame.locals as pl
 
 pygame.font.init()
-
-class Box:
-    clickDown = False
-    clickUp = False
-    drag = False
-    def __init__(self, x, y, image, name, manager):
-        self.x = x
-        self.y = y
-        self.manager = manager
-        self.inputImage = image
-        self.image = pygame.transform.rotozoom(image, 0, 0.45)
-        self.rect = self.image.get_rect()
-        self.imageWidth = self.rect[2]
-        self.imageHeight = self.rect[3]
-        self.name = name
-        if(name == "delay"):
-            self.textinput = TextInput()
-            self.value = 0
-            self.textinput.input_string = '0'
-    def show(self, display):
-        display.blit(self.image, (self.x, self.y))
-    def updateDelay(self):
-        events = pygame.event.get()
-        self.textinput.update(events)
-        if(self.textinput.input_string == ''):
-            self.value = 0
-        else:
-            try:
-                self.value = int(self.textinput.input_string)
-            except Exception as e:
-                self.textinput.input_string = 0
-    def showDelayTex(self, display, x, y):
-        display.blit(self.textinput.get_surface(), (x, y))
-    def checkClick(self, display, commandArray, mouse_x, mouse_y, mouse_click, mouse_release):
-        if mouse_release and self.drag:
-            if(mouse_x > 50 and mouse_x < 50 + self.imageWidth):
-                if(mouse_y > 65 + 45*len(commandArray) and mouse_y < 65 + 45*len(commandArray) + 45):
-                    commandArray.append(Box(self.x, self.y, self.inputImage, self.name, self.manager))
-            self.drag = False
-        elif(self.drag):
-            display.blit(self.image, (mouse_x - self.imageWidth/2, mouse_y - self.imageHeight/2))
-        elif(mouse_click and mouse_x > self.x and mouse_x < self.x + self.imageWidth and mouse_y > self.y and mouse_y < self.y + self.imageHeight):
-            self.drag = True
-        return commandArray
-
-
-
 
 
 class TextInput:
@@ -64,7 +21,7 @@ class TextInput:
             self,
             initial_string="",
             font_family="",
-            font_size=20,
+            font_size=35,
             antialias=True,
             text_color=(0, 0, 0),
             cursor_color=(0, 0, 1),
@@ -219,3 +176,30 @@ class TextInput:
     def clear_text(self):
         self.input_string = ""
         self.cursor_position = 0
+
+
+
+if __name__ == "__main__":
+    pygame.init()
+
+    # Create TextInput-object
+    textinput = TextInput()
+
+    screen = pygame.display.set_mode((1000, 200))
+    clock = pygame.time.Clock()
+
+    while True:
+        screen.fill((225, 225, 225))
+
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                exit()
+
+        # Feed it with events every frame
+        textinput.update(events)
+        # Blit its surface onto the screen
+        screen.blit(textinput.get_surface(), (10, 10))
+
+        pygame.display.update()
+        clock.tick(30)
