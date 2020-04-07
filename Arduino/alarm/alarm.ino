@@ -66,11 +66,11 @@ void loop() {
     }
   }
   if(led){
-    digitalWrite(12, 1);
-    digitalWrite(14, 1);
+    digitalWrite(13, 1);
+    digitalWrite(16, 1);
   }else{
-    digitalWrite(12, 0);
-    digitalWrite(14, 0);
+    digitalWrite(13, 0);
+    digitalWrite(16, 0);
   }
   
   delay(100);
