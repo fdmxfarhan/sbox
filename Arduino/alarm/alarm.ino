@@ -20,12 +20,13 @@ WiFiClient client;
 char rec;
 bool led = false;;
 void setup() {
-  pinMode(12, OUTPUT);
-  pinMode(13, OUTPUT);
-  pinMode(14, OUTPUT);
-  pinMode(16, OUTPUT);
+  pinMode(12, OUTPUT); //led1
+  pinMode(13, OUTPUT); //buzzer
+  pinMode(14, OUTPUT); //led2
+  pinMode(16, OUTPUT); //vibrate
   pinMode(2, OUTPUT);
   digitalWrite(2, 1);
+  
   Serial.begin(115200);
 
   // We start by connecting to a WiFi network
@@ -59,19 +60,29 @@ void loop() {
   if(client.available()){
     rec = client.read();
     Serial.println(rec);
-    if(rec == 'T')      led = true;
-    else if(rec == 'F') led = false;
+    if(rec == 'L'){
+      digitalWrite(12, 1);
+      digitalWrite(14, 1);
+    }
+    else if(rec == 'l') {
+      digitalWrite(12, 0);
+      digitalWrite(14, 0);
+    }
+    else if(rec == 'B') {
+      digitalWrite(13, 1);
+    }
+    else if(rec == 'b') {
+      digitalWrite(13, 0);
+    }
+    else if(rec == 'V') {
+      digitalWrite(16, 1);
+    }
+    else if(rec == 'v') {
+      digitalWrite(16, 0);
+    }
     else if(rec == 'N'){
       client.print(Name);
     }
   }
-  if(led){
-    digitalWrite(13, 1);
-    digitalWrite(16, 1);
-  }else{
-    digitalWrite(13, 0);
-    digitalWrite(16, 0);
-  }
-  
   delay(100);
 }

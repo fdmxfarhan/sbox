@@ -6,11 +6,98 @@ import pygame.locals as pl
 
 pygame.font.init()
 
+class Title:
+    """docstring for Title."""
+    def __init__(self, index, color, name, diplay):
+        self.index = index
+        self.name = name
+        self.display = diplay
+        self.color = color
+        font = pygame.font.SysFont("tahoma", 14)
+        self.text = font.render(name, True, (color[0] - 50, color[1] - 50, color[2] - 50))
+        self.active = False
+        self.kind = "Title"
+    def show(self):
+        pygame.draw.circle(self.display,self.color,(590,60 + self.index * 90), 15)
+        self.display.blit(self.text,(590 - self.text.get_width()/2,80 + self.index * 90))
+        if(self.active):
+            pygame.draw.rect(self.display,self.color,(560,100 + self.index * 90, 60, 5))
+        else:
+            pygame.draw.rect(self.display,(240,255,255),(560,100 + self.index * 90, 60, 5))
+    def checkClick(self, mouse_x, mouse_y, mouse_click, array):
+        if(mouse_click and mouse_x > 550 and mouse_x < 630 and mouse_y > 30 + self.index * 90 and mouse_y < 100 + self.index * 90):
+            for i in range(len(array)):
+                array[i].active = False
+            self.active = True
+
+###############################################################################
+class Statement:
+    """docstring for State."""
+    def __init__(self, arg):
+        super(State, self).__init__()
+        self.arg = arg
+        self.kind = "Statement"
+
+###############################################################################
+class Condition:
+    """docstring for Condition."""
+    def __init__(self, x, y, image, name, display):
+        self.display = display
+        self.x = x
+        self.y = y
+        self.image = pygame.transform.rotozoom(image[0], 0, 0.45)
+        self.firstImage = pygame.transform.rotozoom(image[1], 0, 0.45)
+        self.middleImage = pygame.transform.rotozoom(image[2], 0, 0.45)
+        self.endImage = pygame.transform.rotozoom(image[3], 0, 0.45)
+        self.firstImageWidth = self.firstImage.get_rect()[2]
+        self.middleImageWidth = self.middleImage.get_rect()[2]
+        self.endImageWidth = self.endImage.get_rect()[2]
+        self.firstImageHeight = self.firstImage.get_rect()[3]
+        self.middleImageHeight = self.middleImage.get_rect()[3]
+        self.endImageHeight = self.endImage.get_rect()[3]
+        self.name = name
+        self.inputImage = image
+        self.rect = self.image.get_rect()
+        self.imageWidth = self.rect[2]
+        self.imageHeight = self.rect[3]
+        self.state = False
+        self.drag = False
+        self.kind = "Condition"
+        self.commands = []
+    def show(self):
+        self.display.blit(self.image, (self.x, self.y))
+    def checkClick(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release):
+        if mouse_release and self.drag:
+            if(mouse_x > 50 and mouse_x < 300):
+                if(mouse_y > commandArray[-1].y + commandArray[-1].imageHeight and mouse_y < commandArray[-1].y + commandArray[-1].imageHeight + self.imageHeight):
+                    commandArray.append(Condition(commandArray[-1].x, commandArray[-1].y + commandArray[-1].imageHeight - 5, self.inputImage, self.name, self.display))
+            self.drag = False
+        elif(self.drag):
+            self.display.blit(self.image, (mouse_x - self.imageWidth/2, mouse_y - self.imageHeight/2))
+        elif(mouse_click and mouse_x > self.x and mouse_x < self.x + self.imageWidth and mouse_y > self.y and mouse_y < self.y + self.imageHeight):
+            self.drag = True
+        return commandArray
+    def checkDelete(self, commandArray, mouse_x, mouse_y, mouse_click, index):
+        if mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.imageWidth and mouse_y < self.y + self.imageHeight:
+            for i in range(len(commandArray)-1,index, -1):
+                commandArray[i].y = commandArray[i-1].y
+                commandArray[i].x = commandArray[i-1].x
+            commandArray.remove(commandArray[index])
+        return commandArray
+    def showCommand(self,commandArray, index):
+        if(len(self.commands) == 0):
+            self.display.blit(self.image, (self.x, self.y))
+        else:
+            self.display.blit(self.firstImage, (self.x, self.y))
+            self.display.blit(self.endImage, (self.x, self.y))
+        return commandArray
+###############################################################################
 class Box:
     clickDown = False
     clickUp = False
     drag = False
-    def __init__(self, x, y, image, name, manager):
+    def __init__(self, x, y, image, name, manager, display):
+        self.display = display
         self.x = x
         self.y = y
         self.manager = manager
@@ -20,12 +107,13 @@ class Box:
         self.imageWidth = self.rect[2]
         self.imageHeight = self.rect[3]
         self.name = name
+        self.kind = "Box"
         if(name == "delay"):
             self.textinput = TextInput()
             self.value = 0
             self.textinput.input_string = '0'
-    def show(self, display):
-        display.blit(self.image, (self.x, self.y))
+    def show(self):
+        self.display.blit(self.image, (self.x, self.y))
     def updateDelay(self):
         events = pygame.event.get()
         self.textinput.update(events)
@@ -40,19 +128,22 @@ class Box:
         display.blit(self.textinput.get_surface(), (x, y))
     def checkClick(self, display, commandArray, mouse_x, mouse_y, mouse_click, mouse_release):
         if mouse_release and self.drag:
-            if(mouse_x > 50 and mouse_x < 50 + self.imageWidth):
-                if(mouse_y > 65 + 45*len(commandArray) and mouse_y < 65 + 45*len(commandArray) + 45):
-                    commandArray.append(Box(self.x, self.y, self.inputImage, self.name, self.manager))
+            if(mouse_x > 50 and mouse_x < 300):
+                if(mouse_y > commandArray[-1].y + commandArray[-1].imageHeight and mouse_y < commandArray[-1].y + commandArray[-1].imageHeight + self.imageHeight):
+                    commandArray.append(Box(commandArray[-1].x, commandArray[-1].y + commandArray[-1].imageHeight - 5, self.inputImage, self.name, self.manager, self.display))
             self.drag = False
         elif(self.drag):
             display.blit(self.image, (mouse_x - self.imageWidth/2, mouse_y - self.imageHeight/2))
         elif(mouse_click and mouse_x > self.x and mouse_x < self.x + self.imageWidth and mouse_y > self.y and mouse_y < self.y + self.imageHeight):
             self.drag = True
         return commandArray
-
-
-
-
+    def checkDelete(self, commandArray, mouse_x, mouse_y, mouse_click, index):
+        if mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.imageWidth and mouse_y < self.y + self.imageHeight:
+            for i in range(len(commandArray)-1,index, -1):
+                commandArray[i].y = commandArray[i-1].y
+                commandArray[i].x = commandArray[i-1].x
+            commandArray.remove(commandArray[index])
+        return commandArray
 
 class TextInput:
     """
