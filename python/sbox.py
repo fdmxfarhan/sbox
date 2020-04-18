@@ -8,7 +8,7 @@ manager = pygame_gui.UIManager((1100, 600), 'theme.json')
 font = pygame.font.SysFont("comicsansms", 30)
 text_Codes = font.render("Commands:", True, (0, 128, 0))
 
-background_color = (0,250,220)
+background_color = (150,250,250)
 button_color = (0,0,255)
 
 button_layout_rect = pygame.Rect(900, 530, 150, 40)
@@ -16,6 +16,7 @@ clock = pygame.time.Clock()
 crashed = False
 run_button = pygame_gui.elements.UIButton(relative_rect=button_layout_rect, text='Run', manager=manager)
 
+################################################ Loading Images
 start_img = pygame.image.load('start.png')
 lighton_img = pygame.image.load('lightOn.png')
 lightoff_img = pygame.image.load('lightOff.png')
@@ -39,6 +40,7 @@ humidityless_img = pygame.image.load('humidityless.png')
 distancehigher_img = pygame.image.load('distancehigher.png')
 distanceless_img = pygame.image.load('distanceless.png')
 
+################################################# Boxes
 start = Box(50, 50, start_img, "start", manager,gameDisplay)
 lighton = Box(700, 40, lighton_img, "lighton", manager,gameDisplay)
 lightoff = Box(700, 100, lightoff_img, "lightoff", manager, gameDisplay)
@@ -46,15 +48,28 @@ alarmon = Box(700, 160, alarmon_img, "alarmon", manager, gameDisplay)
 alarmoff = Box(700, 220, alarmoff_img, "alarmoff", manager, gameDisplay)
 delay = Box(700, 280, delay_img, "delay", manager, gameDisplay)
 
+################################################# Conditions
 cif = Condition(700, 40, [if_img, firstif_img, middle_img, end_img], "if", gameDisplay)
 cwhile = Condition(700, 150, [while_img, firstwhile_img, middle_img, end_img], "while", gameDisplay)
 cfor = Condition(700, 260, [for_img, firstfor_img, middle_img, end_img], "for", gameDisplay)
 
+################################################# Statements
+temphigher = Statement(700, 40, temphigher_img, "temphigher", gameDisplay)
+templess = Statement(700, 90, templess_img, "templess", gameDisplay)
+lighthigher = Statement(700, 140, lighthigher_img, "lighthigher", gameDisplay)
+lightless = Statement(700, 190, lightless_img, "lightless", gameDisplay)
+humidityhigher = Statement(700, 240, humidityhigher_img, "humidityhigher", gameDisplay)
+humidityless = Statement(700, 290, humidityless_img, "humidityless", gameDisplay)
+distancehigher = Statement(700, 340, distancehigher_img, "distancehigher", gameDisplay)
+distanceless = Statement(700, 390, distanceless_img, "distanceless", gameDisplay)
+
+################################################# Titles
 Events = Title(0, (50,255,50), "Events", gameDisplay)
 Conditions = Title(1, (250,50,250), "Conditions", gameDisplay)
 Statements = Title(2, (50,50,255), "Statements", gameDisplay)
 Events.active = True
 
+################################################ Variables
 commands = [start]
 mouse_x = 0
 mouse_y = 0
@@ -80,6 +95,15 @@ def showAll():
         cif.show()
         cwhile.show()
         cfor.show()
+    elif(Statements.active):
+        temphigher.show()
+        templess.show()
+        humidityhigher.show()
+        humidityless.show()
+        lighthigher.show()
+        lightless.show()
+        distancehigher.show()
+        distanceless.show()
 
 def checkAll():
     global commands
@@ -89,10 +113,19 @@ def checkAll():
         commands = lightoff.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release)
         commands = alarmoff.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release)
         commands = delay.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release)
-    if(Conditions.active):
+    elif(Conditions.active):
         commands = cif.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
         commands = cfor.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
         commands = cwhile.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
+    elif(Statements.active):
+        commands = temphigher.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
+        commands = templess.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
+        commands = humidityhigher.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
+        commands = humidityless.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
+        commands = lighthigher.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
+        commands = lightless.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
+        commands = distancehigher.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
+        commands = distanceless.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
     Events.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events])
     Conditions.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events])
     Statements.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events])
@@ -107,19 +140,18 @@ def showCommands():
         elif(commands[i].kind == "Condition"):
             commands = commands[i].showCommand(commands, i)
     for i in range(1,len(commands)):
-        if(i < len(commands) and commands[i].kind == "Box"):
+        if(i < len(commands)):
             commands = commands[i].checkDelete(commands, mouse_x, mouse_y, mouse_click, i)
     if(commands[-1].name == "delay" and commands[-1].kind == "Box"):
         commands[-1].updateDelay()
 
 def showDisplay():
     pygame.draw.rect(gameDisplay,(200,255,255),(30,40,500,540))
-    pygame.draw.rect(gameDisplay,(240,255,255),(550,30,80,560))
+    pygame.draw.rect(gameDisplay,(220,255,255),(550,30,80,560))
     gameDisplay.blit(text_Codes,(30,15))
     Events.show()
     Conditions.show()
     Statements.show()
-
 
 while not crashed:
     time_delta = clock.tick(60)/1000.0
