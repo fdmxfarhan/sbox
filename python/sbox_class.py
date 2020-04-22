@@ -1,10 +1,32 @@
 import pygame
-import pygame_gui
 import os.path
 import pygame
 import pygame.locals as pl
 pygame.font.init()
 
+class Button:
+    def __init__(self, x, y, image, scale, name, display):
+        self.x = x
+        self.y = y
+        self.image = pygame.transform.rotozoom(image, 0, scale)
+        self.image2 = pygame.transform.rotozoom(image, 0, scale)
+        self.rect = self.image.get_rect()
+        self.imageWidth = self.rect[2]
+        self.imageHeight = self.rect[3]
+        self.name = name
+        self.display = display
+    def show(self):
+        self.display.blit(self.image,(self.x, self.y))
+    def checkClick(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release):
+        if(mouse_click and mouse_x > self.x and mouse_x < self.x + self.imageWidth and mouse_y > self.y and mouse_y < self.y + self.imageHeight):
+            self.image = pygame.transform.rotozoom(self.image, 0, 1.05)
+            if(self.name == "clear"):
+                for comm in commandArray[1:]:
+                    commandArray.remove(comm)
+        elif(mouse_release):
+            self.image = self.image2
+        return commandArray
+###################################################### Titles
 class Title:
     """docstring for Title."""
     def __init__(self, index, color, name, diplay):
@@ -45,14 +67,16 @@ class Statement:
         self.state = False
         self.drag = False
         self.kind = "Statement"
+        self.scroll = 0
     def show(self):
-        self.display.blit(self.image, (self.x, self.y))
-    def checkClick(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release):
+        self.display.blit(self.image, (self.x, self.y - self.scroll))
+    def checkClick(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, scr):
         if mouse_release and self.drag:
+            mouse_y += scr
             for comm in commandArray:
-                if(comm.kind == "Condition"):
+                if(comm.kind == "Condition" and comm.name != "for"):
                     if(mouse_x > comm.x and mouse_y > comm.y and mouse_x < comm.x + 300 and mouse_y < comm.y + comm.imageHeight):
-                        comm.state = Statement(comm.x + 20, comm.y + 3, self.inputImage, self.name, self.display)
+                        comm.state = Statement(comm.x + 40, comm.y + 3, self.inputImage, self.name, self.display)
             self.drag = False
         elif(self.drag):
             self.display.blit(self.image, (mouse_x - self.imageWidth/2, mouse_y - self.imageHeight/2))
@@ -93,10 +117,12 @@ class Condition:
         self.drag = False
         self.kind = "Condition"
         self.commands = []
+        self.scroll = 0
     def show(self):
         self.display.blit(self.image, (self.x, self.y))
-    def checkClick(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release):
+    def checkClick(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, scr):
         if mouse_release and self.drag:
+            mouse_y += scr
             if(mouse_x > 50 and mouse_x < 300):
                 for comm in commandArray:
                     if (comm.kind == "Condition" and len(comm.commands) == 0):
@@ -130,7 +156,7 @@ class Condition:
         return commandArray
     def showCommand(self,commandArray, index):
         if(len(self.commands) == 0):
-            self.display.blit(self.image, (self.x, self.y))
+            self.display.blit(self.image, (self.x, self.y - self.scroll))
             self.imageHeight = self.rect[3]
             cnt = 0
             for i in range(index + 1, len(commandArray)):
@@ -138,24 +164,29 @@ class Condition:
                 cnt += commandArray[i].imageHeight -5
         else:
             self.imageHeight = self.firstImageHeight + self.endImageHeight - 5
-            self.display.blit(self.firstImage, (self.x, self.y))
+            self.display.blit(self.firstImage, (self.x, self.y - self.scroll))
             cnt = 0
             for comm in self.commands:
-                for i in range(comm.y, comm.y + comm.imageHeight, 5):
+                for i in range(comm.y - self.scroll, comm.y - self.scroll + comm.imageHeight, 5):
                     self.display.blit(self.middleImage, (comm.x - 15, i))
                 comm.y = self.y + self.firstImageHeight + cnt - 5
                 cnt += comm.imageHeight - 5
                 if(comm.kind == "Box"):
+                    comm.scroll = self.scroll
                     comm.show()
                 elif(comm.kind == "Condition"):
+                    comm.scroll = self.scroll
                     self.commands = comm.showCommand(self.commands, self.commands.index(comm))
                 self.imageHeight += comm.imageHeight - 5
-            self.display.blit(self.endImage, (self.x, self.commands[-1].y + self.commands[-1].imageHeight - 5))
+            self.display.blit(self.endImage, (self.x, self.commands[-1].y - self.scroll + self.commands[-1].imageHeight - 5))
             cnt = 0
             for i in range(index + 1, len(commandArray)):
                 commandArray[i].y = self.commands[-1].y + self.commands[-1].imageHeight + self.endImageHeight + cnt - 10
                 cnt += commandArray[i].imageHeight -5
         if(self.state):
+            self.state.x = self.x + 40
+            self.state.y = self.y + 3
+            self.state.scroll = self.scroll
             self.state.show()
         return commandArray
 ###############################################################################
@@ -163,11 +194,10 @@ class Box:
     clickDown = False
     clickUp = False
     drag = False
-    def __init__(self, x, y, image, name, manager, display):
+    def __init__(self, x, y, image, name, display):
         self.display = display
         self.x = x
         self.y = y
-        self.manager = manager
         self.inputImage = image
         self.image = pygame.transform.rotozoom(image, 0, 0.45)
         self.rect = self.image.get_rect()
@@ -175,12 +205,13 @@ class Box:
         self.imageHeight = self.rect[3]
         self.name = name
         self.kind = "Box"
+        self.scroll = 0
         if(name == "delay"):
             self.textinput = TextInput()
             self.value = 0
             self.textinput.input_string = '0'
     def show(self):
-        self.display.blit(self.image, (self.x, self.y))
+        self.display.blit(self.image, (self.x, self.y - self.scroll))
     def updateDelay(self):
         events = pygame.event.get()
         self.textinput.update(events)
@@ -201,24 +232,25 @@ class Box:
         if flag:
             if(len(comm.commands) == 0):
                 if(mouse_y > comm.y and mouse_y < comm.y + comm.imageHeight):
-                    comm.commands.append(Box( comm.x + 15, comm.y + comm.firstImageHeight - 5, self.inputImage, self.name, self.manager, self.display))
+                    comm.commands.append(Box( comm.x + 15, comm.y + comm.firstImageHeight - 5, self.inputImage, self.name, self.display))
                     flag = False
                     for i in range(commandArray.index(comm) + 1, len(commandArray)):
                         commandArray[i].y += comm.commands[-1].imageHeight - 20
             elif(comm.kind == "Condition" and mouse_y > comm.y and mouse_y < comm.commands[-1].y + comm.commands[-1].imageHeight + 30):
-                comm.commands.append(Box( comm.commands[-1].x, comm.commands[-1].y + comm.commands[-1].imageHeight - 5, self.inputImage, self.name, self.manager, self.display))
+                comm.commands.append(Box( comm.commands[-1].x, comm.commands[-1].y + comm.commands[-1].imageHeight - 5, self.inputImage, self.name, self.display))
                 flag = False
                 for i in range(commandArray.index(comm) + 1, len(commandArray)):
                     commandArray[i].y += comm.commands[-1].imageHeight - 5
         return commandArray, flag
-    def checkClick(self, display, commandArray, mouse_x, mouse_y, mouse_click, mouse_release):
+    def checkClick(self, display, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, scr):
         if mouse_release and self.drag:
+            mouse_y += scr
             if(mouse_x > 50 and mouse_x < 300):
                 for comm in commandArray:
                     if (comm.kind == "Condition"):
                         commandArray, flag = self.checkCondition(display, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, comm)
                 if(mouse_y > commandArray[-1].y + commandArray[-1].imageHeight and mouse_y < commandArray[-1].y + commandArray[-1].imageHeight + self.imageHeight):
-                    commandArray.append(Box(commandArray[-1].x, commandArray[-1].y + commandArray[-1].imageHeight - 5, self.inputImage, self.name, self.manager, self.display))
+                    commandArray.append(Box(commandArray[-1].x, commandArray[-1].y + commandArray[-1].imageHeight - 5, self.inputImage, self.name, self.display))
             self.drag = False
         elif(self.drag):
             display.blit(self.image, (mouse_x - self.imageWidth/2, mouse_y - self.imageHeight/2))
@@ -277,6 +309,7 @@ class TextInput:
         # Text-surface will be created during the first update call:
         self.surface = pygame.Surface((1, 1))
         self.surface.set_alpha(0)
+
 
         # Vars to make keydowns repeat after user pressed a key for some time:
         self.keyrepeat_counters = {}  # {event.key: (counter_int, event.unicode)} (look for "***")
