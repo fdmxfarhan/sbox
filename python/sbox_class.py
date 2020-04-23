@@ -70,13 +70,23 @@ class Statement:
         self.scroll = 0
     def show(self):
         self.display.blit(self.image, (self.x, self.y - self.scroll))
+    def checkCondition(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, comm):
+        flag = True
+        for in_comm in comm.commands:
+            if(in_comm.kind == "Condition"):
+                if(mouse_y > in_comm.y and mouse_y < in_comm.y + in_comm.imageHeight):
+                    comm.commmands = self.checkCondition(comm.commands, mouse_x, mouse_y, mouse_click, mouse_release, in_comm)
+                    flag = False
+                    return commandArray
+        if(mouse_x > comm.x and mouse_y > comm.y and mouse_x < comm.x + 300 and mouse_y < comm.y + comm.imageHeight):
+            comm.state = Statement(comm.x + 40, comm.y + 3, self.inputImage, self.name, self.display)
+        return commandArray
     def checkClick(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, scr):
         if mouse_release and self.drag:
             mouse_y += scr
             for comm in commandArray:
                 if(comm.kind == "Condition" and comm.name != "for"):
-                    if(mouse_x > comm.x and mouse_y > comm.y and mouse_x < comm.x + 300 and mouse_y < comm.y + comm.imageHeight):
-                        comm.state = Statement(comm.x + 40, comm.y + 3, self.inputImage, self.name, self.display)
+                    commandArray = self.checkCondition(commandArray, mouse_x, mouse_y, mouse_click, mouse_release, comm)
             self.drag = False
         elif(self.drag):
             self.display.blit(self.image, (mouse_x - self.imageWidth/2, mouse_y - self.imageHeight/2))
@@ -120,6 +130,21 @@ class Condition:
         self.scroll = 0
     def show(self):
         self.display.blit(self.image, (self.x, self.y))
+    def checkCondition(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, comm):
+        for in_comm in comm.commands:
+            if(in_comm.kind == "Condition"):
+                if(mouse_y > in_comm.y and mouse_y < in_comm.y + in_comm.imageHeight):
+                    comm.commands = self.checkCondition(comm.commands, mouse_x, mouse_y, mouse_click, mouse_release, in_comm)
+                    return commandArray
+        if(len(comm.commands) == 0):
+            comm.commands.append(Condition(comm.x + 15, comm.y + comm.firstImageHeight - 5, self.inputImage, self.name, self.display))
+            for i in range(commandArray.index(comm) + 1, len(commandArray)):
+                commandArray[i].y += comm.commands[-1].imageHeight - 20
+        else:
+            comm.commands.append(Condition( comm.commands[-1].x, comm.commands[-1].y + comm.commands[-1].imageHeight - 5, self.inputImage, self.name, self.display))
+            for i in range(commandArray.index(comm) + 1, len(commandArray)):
+                commandArray[i].y += comm.commands[-1].imageHeight - 5
+        return commandArray
     def checkClick(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, scr):
         if mouse_release and self.drag:
             mouse_y += scr
@@ -131,9 +156,7 @@ class Condition:
                             for i in range(commandArray.index(comm) + 1, len(commandArray)):
                                 commandArray[i].y += comm.commands[-1].imageHeight - 20
                     elif(comm.kind == "Condition" and mouse_y > comm.y and mouse_y < comm.commands[-1].y + comm.commands[-1].imageHeight):
-                        comm.commands.append(Condition( comm.commands[-1].x, comm.commands[-1].y + comm.commands[-1].imageHeight - 5, self.inputImage, self.name, self.display))
-                        for i in range(commandArray.index(comm) + 1, len(commandArray)):
-                            commandArray[i].y += comm.commands[-1].imageHeight - 5
+                        commandArray = self.checkCondition(commandArray, mouse_x, mouse_y, mouse_click, mouse_release, comm)
                 if(mouse_y > commandArray[-1].y + commandArray[-1].imageHeight and mouse_y < commandArray[-1].y + commandArray[-1].imageHeight + self.imageHeight):
                     commandArray.append(Condition(commandArray[-1].x, commandArray[-1].y + commandArray[-1].imageHeight - 5, self.inputImage, self.name, self.display))
             self.drag = False

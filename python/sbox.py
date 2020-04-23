@@ -80,6 +80,7 @@ button_color = (0,0,255)
 clock = pygame.time.Clock()
 crashed = False
 doScroll = False
+last_scr = 0
 scr = 0
 
 def runCommands():
@@ -169,7 +170,8 @@ def showDisplay():
     Values.show()
 
 def scroll():
-    global scr, doScroll
+    global scr, doScroll, last_scr
+    scr = last_scr
     if(mouse_x > 510 and mouse_x < 530 and mouse_y < 580 and mouse_y > 40 or doScroll):
         pygame.draw.rect(gameDisplay,(235,235,235),(520,40,10,540))
         if(mouse_click):
@@ -187,6 +189,8 @@ def scroll():
     if(scr >490):
         scr = 490
     pygame.draw.rect(gameDisplay,(210,210,210),(520,50 + scr,10,30))
+    last_scr = scr
+    scr *= 2
 while not crashed:
     time_delta = clock.tick(60)/1000.0
     for event in pygame.event.get():
