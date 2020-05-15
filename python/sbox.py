@@ -1,5 +1,6 @@
 import pygame
 from sbox_class import *
+
 pygame.init()
 gameDisplay = pygame.display.set_mode((1100,600))
 pygame.display.set_caption('S-box')
@@ -75,6 +76,7 @@ mouse_x = 0
 mouse_y = 0
 mouse_click = False
 mouse_release = False
+mouse_right_click = False
 background_color = (150,250,250)
 button_color = (0,0,255)
 clock = pygame.time.Clock()
@@ -82,13 +84,31 @@ crashed = False
 doScroll = False
 last_scr = 0
 scr = 0
+server = Server()
 
 def runCommands():
+    mouse_click = False
+    mouse_release = False
+    showAll()
+    checkAll()
+    server.connect()
     for i in range(len(commands)):
         if(commands[i].name == "delay"):
             print(commands[i].name + ' ' + str(commands[i].value))
         else:
             print(commands[i].name)
+        if(commands[i].name == "lighton"):
+            server.lightOn()
+        elif(commands[i].name == "lightoff"):
+            server.lightOff()
+        elif(commands[i].name == "alarmon"):
+            server.buzzerOn()
+            server.vibrateOn()
+        elif(commands[i].name == "alarmoff"):
+            server.buzzerOff()
+            server.vibrateOff()
+        elif(commands[i].name == "delay"):
+            time.sleep(commands[i].value)
 
 def showAll():
     start.show()
@@ -151,15 +171,13 @@ def showCommands():
             commands[i].scroll = scr
             commands[i].show()
             if(commands[i].name == "delay"):
-                commands[i].showDelayTex(gameDisplay, 110, commands[i].y + 15)
+                commands[i].updateDelay(mouse_x, mouse_y, mouse_click)
         elif(commands[i].kind == "Condition"):
             commands[i].scroll = scr
             commands = commands[i].showCommand(commands, i)
     for i in range(1,len(commands)):
         if(i < len(commands)):
-            commands = commands[i].checkDelete(commands, mouse_x, mouse_y + scr, mouse_click, i)
-    if(commands[-1].name == "delay" and commands[-1].kind == "Box"):
-        commands[-1].updateDelay()
+            commands = commands[i].checkDelete(commands, mouse_x, mouse_y + scr, mouse_right_click, i, mouse_click)
 
 def showDisplay():
     pygame.draw.rect(gameDisplay,(200,255,255),(30,40,500,540))
@@ -212,6 +230,8 @@ while not crashed:
             scr -= 5
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 5 and event.pos[0] < 550:
             scr += 5
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+            mouse_right_click = True
     gameDisplay.fill(background_color)
     showDisplay()
     showAll()
@@ -221,9 +241,13 @@ while not crashed:
     gameDisplay.blit(text_Codes,(30,15))
     scroll()
     checkAll()
+    if(run_btn.click(mouse_x, mouse_y, mouse_click, mouse_release)):
+        runCommands()
     pygame.display.update()
     clock.tick(60)
     mouse_click = False
     mouse_release = False
+    mouse_right_click = False
 pygame.quit()
 quit()
+server.close()

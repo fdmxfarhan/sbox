@@ -2,7 +2,69 @@ import pygame
 import os.path
 import pygame
 import pygame.locals as pl
+import socket
+import time
+HOST = '0.0.0.0'
+PORT = 3000
+
 pygame.font.init()
+
+class Server:
+    """docstring for Server."""
+    def __init__(self):
+        socket.setdefaulttimeout(0.1)
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.bind((HOST, PORT))
+        try:
+            self.s.listen(12)
+            self.WiFi = True
+        except:
+            print('[ Error ] You are not connected to any network.!!')
+            self.WiFi = False
+        self.box = {}
+    def connect(self):
+        for i in range(10):
+            try:
+                conn, addr = self.s.accept()
+                conn.send(b'N')
+                time.sleep(0.5)
+                name = str(conn.recv(100))
+                self.box[name] = conn
+            except Exception as e:
+                pass
+        print(self.box)
+    def close(self):
+        self.s.close()
+    def lightOn(self):
+        try:
+            self.box['alarm'].send(b'L')
+        except:
+            print("[ Error ] alarm box is not connected.")
+    def lightOff(self):
+        try:
+            self.box['alarm'].send(b'l')
+        except:
+            print("[ Error ] alarm box is not connected.")
+    def buzzerOn(self):
+        try:
+            self.box['alarm'].send(b'B')
+        except:
+            print("[ Error ] alarm box is not connected.")
+    def buzzerOff(self):
+        try:
+            self.box['alarm'].send(b'b')
+        except:
+            print("[ Error ] alarm box is not connected.")
+    def vibrateOn(self):
+        try:
+            self.box['alarm'].send(b'V')
+        except:
+            print("[ Error ] alarm box is not connected.")
+    def vibrateOff(self):
+        try:
+            self.box['alarm'].send(b'v')
+        except:
+            print("[ Error ] alarm box is not connected.")
 
 class Button:
     def __init__(self, x, y, image, scale, name, display):
@@ -26,6 +88,12 @@ class Button:
         elif(mouse_release):
             self.image = self.image2
         return commandArray
+    def click(self, mouse_x, mouse_y, mouse_click, mouse_release):
+        if(mouse_click and mouse_x > self.x and mouse_x < self.x + self.imageWidth and mouse_y > self.y and mouse_y < self.y + self.imageHeight):
+            return True
+        else:
+            return False
+
 ###################################################### Titles
 class Title:
     """docstring for Title."""
@@ -168,14 +236,14 @@ class Condition:
             if(comm.kind == "Condition"):
                 comm.commands = comm.checkClick(comm.commands, mouse_x, mouse_y, mouse_click, self.commands.index(comm))
         return commandArray
-    def checkDelete(self, commandArray, mouse_x, mouse_y, mouse_click, index):
+    def checkDelete(self, commandArray, mouse_x, mouse_y, mouse_click, index, mouse_left_click):
         if len(self.commands) == 0 and mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.imageWidth and mouse_y < self.y + self.imageHeight:
             for i in range(len(commandArray)-1,index, -1):
                 commandArray[i].y = commandArray[i-1].y
                 commandArray[i].x = commandArray[i-1].x
             commandArray.remove(commandArray[index])
         for comm in self.commands:
-            self.commands = comm.checkDelete(self.commands, mouse_x, mouse_y, mouse_click, self.commands.index(comm))
+            self.commands = comm.checkDelete(self.commands, mouse_x, mouse_y, mouse_click, self.commands.index(comm), mouse_left_click)
         return commandArray
     def showCommand(self,commandArray, index):
         if(len(self.commands) == 0):
@@ -230,23 +298,27 @@ class Box:
         self.kind = "Box"
         self.scroll = 0
         if(name == "delay"):
-            self.textinput = TextInput()
+            self.textinput = inputText(self.x + 60, self.y + 15, display)
             self.value = 0
-            self.textinput.input_string = '0'
+            self.textinput.text = '1'
+        self.selected  = False
     def show(self):
         self.display.blit(self.image, (self.x, self.y - self.scroll))
-    def updateDelay(self):
-        events = pygame.event.get()
-        self.textinput.update(events)
-        if(self.textinput.input_string == ''):
-            self.value = 0
-        else:
-            try:
-                self.value = int(self.textinput.input_string)
-            except Exception as e:
-                self.textinput.input_string = 0
-    def showDelayTex(self, display, x, y):
-        display.blit(self.textinput.get_surface(), (x, y))
+        if(self.name == "delay"):
+            self.textinput.x = self.x + 60
+            self.textinput.y = self.y + 15
+            self.textinput.show(self.scroll)
+            if(self.selected):
+                self.textinput.get()
+            if(self.textinput.text != ''):
+                self.value = int(self.textinput.text)
+    def updateDelay(self, mouse_x, mouse_y, mouse_click):
+        mouse_y += self.scroll
+        if mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.imageWidth and mouse_y < self.y + self.imageHeight:
+            self.selected = True
+            self.textinput.text = ''
+        elif mouse_click:
+            self.selected = False
     def checkCondition(self, display, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, comm):
         flag = True
         for comm2 in comm.commands:
@@ -280,13 +352,32 @@ class Box:
         elif(mouse_click and mouse_x > self.x and mouse_x < self.x + self.imageWidth and mouse_y > self.y and mouse_y < self.y + self.imageHeight):
             self.drag = True
         return commandArray
-    def checkDelete(self, commandArray, mouse_x, mouse_y, mouse_click, index):
+    def checkDelete(self, commandArray, mouse_x, mouse_y, mouse_click, index, mouse_left_click):
+        if(self.name == "delay"):
+            self.updateDelay(mouse_x, mouse_y, mouse_left_click)
         if mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.imageWidth and mouse_y < self.y + self.imageHeight:
             for i in range(len(commandArray)-1,index, -1):
                 commandArray[i].y = commandArray[i-1].y
                 commandArray[i].x = commandArray[i-1].x
             commandArray.remove(commandArray[index])
         return commandArray
+
+class inputText:
+    def __init__(self, x, y, display):
+        self.x = x
+        self.y = y
+        self.display = display
+        self.font = pygame.font.SysFont("tahoma", 14)
+        self.text = ''
+    def show(self, scroll):
+        self.font_text = self.font.render(self.text, True, (100,100,100,100))
+        self.display.blit(self.font_text, (self.x, self.y - scroll))
+    def get(self):
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                if(event.key >= 48 and event.key <= 57):
+                    self.text += event.unicode
 
 class TextInput:
     """

@@ -57,6 +57,12 @@ void setup() {
 
 
 void loop() {
+  while (!client.connected()){
+    digitalWrite(2,1);
+    delay(100);
+    client.connect(host, port);
+  }
+  digitalWrite(2,0);
   if(client.available()){
     rec = client.read();
     Serial.println(rec);
