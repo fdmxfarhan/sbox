@@ -6,7 +6,7 @@
 #define STAPSK  "22402240"
 #endif
 
-#define Name "alarm"
+#define Name "sensor"
 
 const char* ssid     = STASSID;
 const char* password = STAPSK;
@@ -67,24 +67,7 @@ void loop() {
     rec = client.read();
     Serial.println(rec);
     if(rec == 'L'){
-      digitalWrite(12, 1);
-      digitalWrite(14, 1);
-    }
-    else if(rec == 'l') {
-      digitalWrite(12, 0);
-      digitalWrite(14, 0);
-    }
-    else if(rec == 'B') {
-      digitalWrite(13, 1);
-    }
-    else if(rec == 'b') {
-      digitalWrite(13, 0);
-    }
-    else if(rec == 'V') {
-      digitalWrite(16, 1);
-    }
-    else if(rec == 'v') {
-      digitalWrite(16, 0);
+      client.print(analogRead(A0));
     }
     else if(rec == 'N'){
       client.print(Name);

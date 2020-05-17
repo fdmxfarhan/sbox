@@ -49,15 +49,15 @@ run_btn = Button(900, 510, run_img, 0.15, "run", gameDisplay)
 stop_btn = Button(1000, 510, stop_img, 0.37, "stop", gameDisplay)
 clear_btn = Button(410, 530, clear_img, 0.13, "clear", gameDisplay)
 
-################################################# Boxes
-start = Box(50, 50, start_img, "start",gameDisplay)
-lighton = Box(700, 40, lighton_img, "lighton",gameDisplay)
-lightoff = Box(700, 100, lightoff_img, "lightoff", gameDisplay)
-alarmon = Box(700, 160, alarmon_img, "alarmon", gameDisplay)
-alarmoff = Box(700, 220, alarmoff_img, "alarmoff", gameDisplay)
-vibrateon = Box(700, 280, vibrateon_img, "vibrateon", gameDisplay)
-vibrateoff = Box(700, 340, vibrateoff_img, "vibrateoff", gameDisplay)
-delay = Box(850, 40, delay_img, "delay", gameDisplay)
+################################################# Commandes
+start = Command(50, 50, start_img, "start",gameDisplay)
+lighton = Command(700, 40, lighton_img, "lighton",gameDisplay)
+lightoff = Command(700, 100, lightoff_img, "lightoff", gameDisplay)
+alarmon = Command(700, 160, alarmon_img, "alarmon", gameDisplay)
+alarmoff = Command(700, 220, alarmoff_img, "alarmoff", gameDisplay)
+vibrateon = Command(700, 280, vibrateon_img, "vibrateon", gameDisplay)
+vibrateoff = Command(700, 340, vibrateoff_img, "vibrateoff", gameDisplay)
+delay = Command(850, 40, delay_img, "delay", gameDisplay)
 
 ################################################# Conditions
 cif = Condition(700, 40, [if_img, firstif_img, middle_img, end_img], "if", gameDisplay)
@@ -78,14 +78,13 @@ true = Statement(700, 440, true_img, "true", gameDisplay)
 false = Statement(700, 490, false_img, "false", gameDisplay)
 
 ################################################# Titles
-Events = Title(0, (50,255,50), "Events", gameDisplay)
+Events = Title(0, (50,255,50), "Commands", gameDisplay)
 Conditions = Title(1, (250,50,250), "Conditions", gameDisplay)
 Statements = Title(2, (50,50,255), "Statements", gameDisplay)
 Values = Title(3, (255,255,50), "Values", gameDisplay)
 Display = Title(4, (255,100,100), "Display", gameDisplay)
 
 ################################################# Values
-
 
 Events.active = True
 ################################################ Variables
@@ -185,14 +184,16 @@ def checkAll():
 def showCommands():
     global commands
     for i in range(0,len(commands)):
-        if(commands[i].kind == "Box"):
+        if(commands[i].kind == "Command"):
             commands[i].scroll = scr
             commands[i].show()
             if(commands[i].name == "delay"):
-                commands[i].updateDelay(mouse_x, mouse_y, mouse_click)
+                commands[i].updateNumber(mouse_x, mouse_y, mouse_click)
         elif(commands[i].kind == "Condition"):
             commands[i].scroll = scr
             commands = commands[i].showCommand(commands, i)
+            if(commands[i].name == "for"):
+                commands[i].updateNumber(mouse_x, mouse_y, mouse_click)
     for i in range(1,len(commands)):
         if(i < len(commands)):
             commands = commands[i].checkDelete(commands, mouse_x, mouse_y + scr, mouse_right_click, i, mouse_click)

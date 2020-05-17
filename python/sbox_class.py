@@ -32,7 +32,7 @@ class Server:
                 self.box[name] = conn
             except Exception as e:
                 pass
-        # print(self.box)
+        print(self.box)
     def close(self):
         self.s.close()
     def lightOn(self):
@@ -199,8 +199,28 @@ class Condition:
         self.kind = "Condition"
         self.commands = []
         self.scroll = 0
+        if(name == "for"):
+            self.textinput = inputText(self.x + 60, self.y + 15, display)
+            self.value = 0
+            self.textinput.text = '1'
+        self.selected  = False
     def show(self):
         self.display.blit(self.image, (self.x, self.y))
+        if(self.name == "for"):
+            self.textinput.x = self.x + 60
+            self.textinput.y = self.y + 15
+            self.textinput.show(self.scroll)
+            if(self.selected):
+                self.textinput.get()
+            if(self.textinput.text != ''):
+                self.value = int(self.textinput.text)
+    def updateNumber(self, mouse_x, mouse_y, mouse_click):
+        mouse_y += self.scroll
+        if mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.firstImageWidth and mouse_y < self.y + self.endImageHeight:
+            self.selected = True
+            self.textinput.text = ''
+        elif mouse_click:
+            self.selected = False
     def checkCondition(self, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, comm):
         for in_comm in comm.commands:
             if(in_comm.kind == "Condition"):
@@ -240,6 +260,8 @@ class Condition:
                 comm.commands = comm.checkClick(comm.commands, mouse_x, mouse_y, mouse_click, self.commands.index(comm))
         return commandArray
     def checkDelete(self, commandArray, mouse_x, mouse_y, mouse_click, index, mouse_left_click):
+        if(self.name == "for"):
+            self.updateNumber(mouse_x, mouse_y, mouse_left_click)
         if len(self.commands) == 0 and mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.imageWidth and mouse_y < self.y + self.imageHeight:
             for i in range(len(commandArray)-1,index, -1):
                 commandArray[i].y = commandArray[i-1].y
@@ -265,7 +287,7 @@ class Condition:
                     self.display.blit(self.middleImage, (comm.x - 15, i))
                 comm.y = self.y + self.firstImageHeight + cnt - 5
                 cnt += comm.imageHeight - 5
-                if(comm.kind == "Box"):
+                if(comm.kind == "Command"):
                     comm.scroll = self.scroll
                     comm.show()
                 elif(comm.kind == "Condition"):
@@ -282,6 +304,14 @@ class Condition:
             self.state.y = self.y + 3
             self.state.scroll = self.scroll
             self.state.show()
+        if(self.name == "for"):
+            self.textinput.x = self.x + 60
+            self.textinput.y = self.y + 15
+            self.textinput.show(self.scroll)
+            if(self.selected):
+                self.textinput.get()
+            if(self.textinput.text != ''):
+                self.value = int(self.textinput.text)
         return commandArray
     def run(self, server, stop_btn):
         mouse_click = False
@@ -326,9 +356,18 @@ class Condition:
                         server.close()
                 for command in self.commands:
                     command.run(server, stop_btn)
-
-############################################################# Box
-class Box:
+        elif(self.name == "for"):
+            for j in range(self.value):
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        crashed = True
+                        pygame.quit()
+                        quit()
+                        server.close()
+                for command in self.commands:
+                    command.run(server, stop_btn)
+############################################################# Command
+class Command:
     clickDown = False
     clickUp = False
     drag = False
@@ -342,7 +381,7 @@ class Box:
         self.imageWidth = self.rect[2]
         self.imageHeight = self.rect[3]
         self.name = name
-        self.kind = "Box"
+        self.kind = "Command"
         self.scroll = 0
         if(name == "delay"):
             self.textinput = inputText(self.x + 60, self.y + 15, display)
@@ -359,7 +398,7 @@ class Box:
                 self.textinput.get()
             if(self.textinput.text != ''):
                 self.value = int(self.textinput.text)
-    def updateDelay(self, mouse_x, mouse_y, mouse_click):
+    def updateNumber(self, mouse_x, mouse_y, mouse_click):
         mouse_y += self.scroll
         if mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.imageWidth and mouse_y < self.y + self.imageHeight:
             self.selected = True
@@ -374,12 +413,12 @@ class Box:
         if flag:
             if(len(comm.commands) == 0):
                 if(mouse_y > comm.y and mouse_y < comm.y + comm.imageHeight):
-                    comm.commands.append(Box( comm.x + 15, comm.y + comm.firstImageHeight - 5, self.inputImage, self.name, self.display))
+                    comm.commands.append(Command( comm.x + 15, comm.y + comm.firstImageHeight - 5, self.inputImage, self.name, self.display))
                     flag = False
                     for i in range(commandArray.index(comm) + 1, len(commandArray)):
                         commandArray[i].y += comm.commands[-1].imageHeight - 20
             elif(comm.kind == "Condition" and mouse_y > comm.y and mouse_y < comm.commands[-1].y + comm.commands[-1].imageHeight + 30):
-                comm.commands.append(Box( comm.commands[-1].x, comm.commands[-1].y + comm.commands[-1].imageHeight - 5, self.inputImage, self.name, self.display))
+                comm.commands.append(Command( comm.commands[-1].x, comm.commands[-1].y + comm.commands[-1].imageHeight - 5, self.inputImage, self.name, self.display))
                 flag = False
                 for i in range(commandArray.index(comm) + 1, len(commandArray)):
                     commandArray[i].y += comm.commands[-1].imageHeight - 5
@@ -392,7 +431,7 @@ class Box:
                     if (comm.kind == "Condition"):
                         commandArray, flag = self.checkCondition(display, commandArray, mouse_x, mouse_y, mouse_click, mouse_release, comm)
                 if(mouse_y > commandArray[-1].y + commandArray[-1].imageHeight and mouse_y < commandArray[-1].y + commandArray[-1].imageHeight + self.imageHeight):
-                    commandArray.append(Box(commandArray[-1].x, commandArray[-1].y + commandArray[-1].imageHeight - 5, self.inputImage, self.name, self.display))
+                    commandArray.append(Command(commandArray[-1].x, commandArray[-1].y + commandArray[-1].imageHeight - 5, self.inputImage, self.name, self.display))
             self.drag = False
         elif(self.drag):
             display.blit(self.image, (mouse_x - self.imageWidth/2, mouse_y - self.imageHeight/2))
@@ -401,7 +440,7 @@ class Box:
         return commandArray
     def checkDelete(self, commandArray, mouse_x, mouse_y, mouse_click, index, mouse_left_click):
         if(self.name == "delay"):
-            self.updateDelay(mouse_x, mouse_y, mouse_left_click)
+            self.updateNumber(mouse_x, mouse_y, mouse_left_click)
         if mouse_click and mouse_x > self.x and mouse_y > self.y and mouse_x < self.x + self.imageWidth and mouse_y < self.y + self.imageHeight:
             for i in range(len(commandArray)-1,index, -1):
                 commandArray[i].y = commandArray[i-1].y
@@ -425,7 +464,7 @@ class Box:
             elif(self.name == "delay"):
                 time.sleep(self.value)
         except:
-            print("[ Error ] alarm box is not connected.")
+            print("[ Error ] box is not connected.")
 
 #################################### Text input
 class inputText:
