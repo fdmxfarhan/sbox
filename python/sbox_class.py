@@ -28,11 +28,11 @@ class Server:
                 conn, addr = self.s.accept()
                 conn.send(b'N')
                 time.sleep(0.5)
-                name = str(conn.recv(100))
+                name = conn.recv(100).decode()
                 self.box[name] = conn
             except Exception as e:
                 pass
-        print(self.box)
+        # print(self.box)
     def close(self):
         self.s.close()
     def lightOn(self):
@@ -107,7 +107,7 @@ class Title:
         self.active = False
         self.kind = "Title"
     def show(self):
-        pygame.draw.circle(self.display,self.color,(590,60 + self.index * 90), 15)
+        pygame.draw.circle(self.display,self.color,(590,60 + self.index * 90), 10)
         self.display.blit(self.text,(590 - self.text.get_width()/2,80 + self.index * 90))
         if(self.active):
             pygame.draw.rect(self.display,self.color,(560,100 + self.index * 90, 60, 5))
@@ -132,7 +132,10 @@ class Statement:
         self.rect = self.image.get_rect()
         self.imageWidth = self.rect[2]
         self.imageHeight = self.rect[3]
-        self.state = False
+        if self.name == "true":
+            self.state = True
+        else:
+            self.state = False
         self.drag = False
         self.kind = "Statement"
         self.scroll = 0
@@ -280,7 +283,51 @@ class Condition:
             self.state.scroll = self.scroll
             self.state.show()
         return commandArray
-###############################################################################
+    def run(self, server, stop_btn):
+        mouse_click = False
+        mouse_release = False
+        mouse_x = -1
+        mouse_y = -1
+        if(self.name == "forever"):
+            crashed = False
+            while not crashed:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        crashed = True
+                        pygame.quit()
+                        quit()
+                        server.close()
+                    elif event.type == pygame.MOUSEMOTION:
+                        mouse_x = event.pos[0]
+                        mouse_y = event.pos[1]
+                    elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        mouse_click = True
+                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                        mouse_click = False
+                        mouse_release = True
+                if(stop_btn.click(mouse_x, mouse_y, mouse_click, mouse_release)):
+                    crashed = True
+                    return
+                for command in self.commands:
+                    command.run(server, stop_btn)
+                mouse_click = False
+                mouse_release = False
+        elif(self.name == "if"):
+            if(self.state.state):
+                for command in self.commands:
+                    command.run(server, stop_btn)
+        elif(self.name == "while"):
+            while(self.state.state):
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        crashed = True
+                        pygame.quit()
+                        quit()
+                        server.close()
+                for command in self.commands:
+                    command.run(server, stop_btn)
+
+############################################################# Box
 class Box:
     clickDown = False
     clickUp = False
@@ -361,7 +408,26 @@ class Box:
                 commandArray[i].x = commandArray[i-1].x
             commandArray.remove(commandArray[index])
         return commandArray
+    def run(self, server, stop_btn):
+        try:
+            if(self.name == "lighton"):
+                server.box['alarm'].send(b'L')
+            elif(self.name == "lightoff"):
+                server.box['alarm'].send(b'l')
+            elif(self.name == "alarmon"):
+                server.box['alarm'].send(b'B')
+            elif(self.name == "alarmoff"):
+                server.box['alarm'].send(b'b')
+            elif(self.name == "vibrateon"):
+                server.box['alarm'].send(b'V')
+            elif(self.name == "vibrateoff"):
+                server.box['alarm'].send(b'v')
+            elif(self.name == "delay"):
+                time.sleep(self.value)
+        except:
+            print("[ Error ] alarm box is not connected.")
 
+#################################### Text input
 class inputText:
     def __init__(self, x, y, display):
         self.x = x
@@ -378,170 +444,3 @@ class inputText:
             if event.type == pygame.KEYDOWN:
                 if(event.key >= 48 and event.key <= 57):
                     self.text += event.unicode
-
-class TextInput:
-    """
-    This class lets the user input a piece of text, e.g. a name or a message.
-    This class let's the user input a short, one-lines piece of text at a blinking cursor
-    that can be moved using the arrow-keys. Delete, home and end work as well.
-    """
-    def __init__(
-            self,
-            initial_string="",
-            font_family="",
-            font_size=20,
-            antialias=True,
-            text_color=(0, 0, 0),
-            cursor_color=(0, 0, 1),
-            repeat_keys_initial_ms=400,
-            repeat_keys_interval_ms=35,
-            max_string_length=-1):
-        """
-        :param initial_string: Initial text to be displayed
-        :param font_family: name or list of names for font (see pygame.font.match_font for precise format)
-        :param font_size:  Size of font in pixels
-        :param antialias: Determines if antialias is applied to font (uses more processing power)
-        :param text_color: Color of text (duh)
-        :param cursor_color: Color of cursor
-        :param repeat_keys_initial_ms: Time in ms before keys are repeated when held
-        :param repeat_keys_interval_ms: Interval between key press repetition when held
-        :param max_string_length: Allowed length of text
-        """
-
-        # Text related vars:
-        self.antialias = antialias
-        self.text_color = text_color
-        self.font_size = font_size
-        self.max_string_length = max_string_length
-        self.input_string = initial_string  # Inputted text
-
-        if not os.path.isfile(font_family):
-            font_family = pygame.font.match_font(font_family)
-
-        self.font_object = pygame.font.Font(font_family, font_size)
-
-        # Text-surface will be created during the first update call:
-        self.surface = pygame.Surface((1, 1))
-        self.surface.set_alpha(0)
-
-
-        # Vars to make keydowns repeat after user pressed a key for some time:
-        self.keyrepeat_counters = {}  # {event.key: (counter_int, event.unicode)} (look for "***")
-        self.keyrepeat_intial_interval_ms = repeat_keys_initial_ms
-        self.keyrepeat_interval_ms = repeat_keys_interval_ms
-
-        # Things cursor:
-        self.cursor_surface = pygame.Surface((int(self.font_size / 20 + 1), self.font_size))
-        self.cursor_surface.fill(cursor_color)
-        self.cursor_position = len(initial_string)  # Inside text
-        self.cursor_visible = True  # Switches every self.cursor_switch_ms ms
-        self.cursor_switch_ms = 500  # /|\
-        self.cursor_ms_counter = 0
-
-        self.clock = pygame.time.Clock()
-
-    def update(self, events):
-        for event in events:
-            if event.type == pygame.KEYDOWN:
-                self.cursor_visible = True  # So the user sees where he writes
-
-                # If none exist, create counter for that key:
-                if event.key not in self.keyrepeat_counters:
-                    self.keyrepeat_counters[event.key] = [0, event.unicode]
-
-                if event.key == pl.K_BACKSPACE:
-                    self.input_string = (
-                        self.input_string[:max(self.cursor_position - 1, 0)]
-                        + self.input_string[self.cursor_position:]
-                    )
-
-                    # Subtract one from cursor_pos, but do not go below zero:
-                    self.cursor_position = max(self.cursor_position - 1, 0)
-                elif event.key == pl.K_DELETE:
-                    self.input_string = (
-                        self.input_string[:self.cursor_position]
-                        + self.input_string[self.cursor_position + 1:]
-                    )
-
-                elif event.key == pl.K_RETURN:
-                    return True
-
-                elif event.key == pl.K_RIGHT:
-                    # Add one to cursor_pos, but do not exceed len(input_string)
-                    self.cursor_position = min(self.cursor_position + 1, len(self.input_string))
-
-                elif event.key == pl.K_LEFT:
-                    # Subtract one from cursor_pos, but do not go below zero:
-                    self.cursor_position = max(self.cursor_position - 1, 0)
-
-                elif event.key == pl.K_END:
-                    self.cursor_position = len(self.input_string)
-
-                elif event.key == pl.K_HOME:
-                    self.cursor_position = 0
-
-                elif len(self.input_string) < self.max_string_length or self.max_string_length == -1:
-                    # If no special key is pressed, add unicode of key to input_string
-                    self.input_string = (
-                        self.input_string[:self.cursor_position]
-                        + event.unicode
-                        + self.input_string[self.cursor_position:]
-                    )
-                    self.cursor_position += len(event.unicode)  # Some are empty, e.g. K_UP
-
-            elif event.type == pl.KEYUP:
-                # *** Because KEYUP doesn't include event.unicode, this dict is stored in such a weird way
-                if event.key in self.keyrepeat_counters:
-                    del self.keyrepeat_counters[event.key]
-
-        # Update key counters:
-        for key in self.keyrepeat_counters:
-            self.keyrepeat_counters[key][0] += self.clock.get_time()  # Update clock
-
-            # Generate new key events if enough time has passed:
-            if self.keyrepeat_counters[key][0] >= self.keyrepeat_intial_interval_ms:
-                self.keyrepeat_counters[key][0] = (
-                    self.keyrepeat_intial_interval_ms
-                    - self.keyrepeat_interval_ms
-                )
-
-                event_key, event_unicode = key, self.keyrepeat_counters[key][1]
-                pygame.event.post(pygame.event.Event(pl.KEYDOWN, key=event_key, unicode=event_unicode))
-
-        # Re-render text surface:
-        self.surface = self.font_object.render(self.input_string, self.antialias, self.text_color)
-
-        # Update self.cursor_visible
-        self.cursor_ms_counter += self.clock.get_time()
-        if self.cursor_ms_counter >= self.cursor_switch_ms:
-            self.cursor_ms_counter %= self.cursor_switch_ms
-            self.cursor_visible = not self.cursor_visible
-
-        if self.cursor_visible:
-            cursor_y_pos = self.font_object.size(self.input_string[:self.cursor_position])[0]
-            # Without this, the cursor is invisible when self.cursor_position > 0:
-            if self.cursor_position > 0:
-                cursor_y_pos -= self.cursor_surface.get_width()
-            self.surface.blit(self.cursor_surface, (cursor_y_pos, 0))
-
-        self.clock.tick()
-        return False
-
-    def get_surface(self):
-        return self.surface
-
-    def get_text(self):
-        return self.input_string
-
-    def get_cursor_position(self):
-        return self.cursor_position
-
-    def set_text_color(self, color):
-        self.text_color = color
-
-    def set_cursor_color(self, color):
-        self.cursor_surface.fill(color)
-
-    def clear_text(self):
-        self.input_string = ""
-        self.cursor_position = 0

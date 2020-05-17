@@ -4,7 +4,7 @@ from sbox_class import *
 pygame.init()
 gameDisplay = pygame.display.set_mode((1100,600))
 pygame.display.set_caption('S-box')
-font = pygame.font.SysFont("comicsansms", 30)
+font = pygame.font.SysFont("tahoma", 20)
 text_Codes = font.render("Commands:", True, (0, 128, 0))
 
 ################################################ Loading Images
@@ -13,13 +13,17 @@ lighton_img = pygame.image.load('lightOn.png')
 lightoff_img = pygame.image.load('lightOff.png')
 alarmon_img = pygame.image.load('alarmOn.png')
 alarmoff_img = pygame.image.load('alarmOff.png')
+vibrateon_img = pygame.image.load('vibrateon.png')
+vibrateoff_img = pygame.image.load('vibrateoff.png')
 delay_img = pygame.image.load('delay.png')
 if_img = pygame.image.load('if.png')
 while_img = pygame.image.load('while.png')
 for_img = pygame.image.load('for.png')
+forever_img = pygame.image.load('forever.png')
 firstif_img = pygame.image.load('firstif.png')
 firstwhile_img = pygame.image.load('firstwhile.png')
 firstfor_img = pygame.image.load('firstfor.png')
+firstforever_img = pygame.image.load('firstforever.png')
 middle_img = pygame.image.load('middle.png')
 end_img = pygame.image.load('end.png')
 temphigher_img = pygame.image.load('temphigher.png')
@@ -30,9 +34,15 @@ humidityhigher_img = pygame.image.load('humidityhigher.png')
 humidityless_img = pygame.image.load('humidityless.png')
 distancehigher_img = pygame.image.load('distancehigher.png')
 distanceless_img = pygame.image.load('distanceless.png')
+true_img = pygame.image.load('true.png')
+false_img = pygame.image.load('false.png')
 run_img = pygame.image.load('run.png')
 stop_img = pygame.image.load('stop.png')
 clear_img = pygame.image.load('clear.png')
+temp_img = pygame.image.load('temperature.png')
+light_img = pygame.image.load('light.png')
+humidity_img = pygame.image.load('humidity.png')
+distance_img = pygame.image.load('distance.png')
 
 ################################################# Buttons
 run_btn = Button(900, 510, run_img, 0.15, "run", gameDisplay)
@@ -45,12 +55,15 @@ lighton = Box(700, 40, lighton_img, "lighton",gameDisplay)
 lightoff = Box(700, 100, lightoff_img, "lightoff", gameDisplay)
 alarmon = Box(700, 160, alarmon_img, "alarmon", gameDisplay)
 alarmoff = Box(700, 220, alarmoff_img, "alarmoff", gameDisplay)
-delay = Box(700, 280, delay_img, "delay", gameDisplay)
+vibrateon = Box(700, 280, vibrateon_img, "vibrateon", gameDisplay)
+vibrateoff = Box(700, 340, vibrateoff_img, "vibrateoff", gameDisplay)
+delay = Box(850, 40, delay_img, "delay", gameDisplay)
 
 ################################################# Conditions
 cif = Condition(700, 40, [if_img, firstif_img, middle_img, end_img], "if", gameDisplay)
 cwhile = Condition(700, 150, [while_img, firstwhile_img, middle_img, end_img], "while", gameDisplay)
 cfor = Condition(700, 260, [for_img, firstfor_img, middle_img, end_img], "for", gameDisplay)
+cforever = Condition(700, 370, [forever_img, firstforever_img, middle_img, end_img], "forever", gameDisplay)
 
 ################################################# Statements
 temphigher = Statement(700, 40, temphigher_img, "temphigher", gameDisplay)
@@ -61,15 +74,20 @@ humidityhigher = Statement(700, 240, humidityhigher_img, "humidityhigher", gameD
 humidityless = Statement(700, 290, humidityless_img, "humidityless", gameDisplay)
 distancehigher = Statement(700, 340, distancehigher_img, "distancehigher", gameDisplay)
 distanceless = Statement(700, 390, distanceless_img, "distanceless", gameDisplay)
+true = Statement(700, 440, true_img, "true", gameDisplay)
+false = Statement(700, 490, false_img, "false", gameDisplay)
 
 ################################################# Titles
 Events = Title(0, (50,255,50), "Events", gameDisplay)
 Conditions = Title(1, (250,50,250), "Conditions", gameDisplay)
 Statements = Title(2, (50,50,255), "Statements", gameDisplay)
 Values = Title(3, (255,255,50), "Values", gameDisplay)
+Display = Title(4, (255,100,100), "Display", gameDisplay)
+
+################################################# Values
+
 
 Events.active = True
-
 ################################################ Variables
 commands = [start]
 mouse_x = 0
@@ -97,18 +115,7 @@ def runCommands():
             print(commands[i].name + ' ' + str(commands[i].value))
         else:
             print(commands[i].name)
-        if(commands[i].name == "lighton"):
-            server.lightOn()
-        elif(commands[i].name == "lightoff"):
-            server.lightOff()
-        elif(commands[i].name == "alarmon"):
-            server.buzzerOn()
-            server.vibrateOn()
-        elif(commands[i].name == "alarmoff"):
-            server.buzzerOff()
-            server.vibrateOff()
-        elif(commands[i].name == "delay"):
-            time.sleep(commands[i].value)
+        commands[i].run(server, stop_btn)
 
 def showAll():
     start.show()
@@ -117,11 +124,14 @@ def showAll():
         lightoff.show()
         alarmon.show()
         alarmoff.show()
+        vibrateon.show()
+        vibrateoff.show()
         delay.show()
     elif(Conditions.active):
         cif.show()
         cwhile.show()
         cfor.show()
+        cforever.show()
     elif(Statements.active):
         temphigher.show()
         templess.show()
@@ -131,6 +141,8 @@ def showAll():
         lightless.show()
         distancehigher.show()
         distanceless.show()
+        true.show()
+        false.show()
     run_btn.show()
     stop_btn.show()
     clear_btn.show()
@@ -141,11 +153,14 @@ def checkAll():
         commands = alarmon.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
         commands = lightoff.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
         commands = alarmoff.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
+        commands = vibrateon.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
+        commands = vibrateoff.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
         commands = delay.checkClick(gameDisplay, commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
     elif(Conditions.active):
         commands = cif.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
         commands = cfor.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
         commands = cwhile.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
+        commands = cforever.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
     elif(Statements.active):
         commands = temphigher.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
         commands = templess.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
@@ -155,10 +170,13 @@ def checkAll():
         commands = lightless.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
         commands = distancehigher.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
         commands = distanceless.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
-    Events.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values])
-    Conditions.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values])
-    Statements.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values])
-    Values.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values])
+        commands = true.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
+        commands = false.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release, scr)
+    Events.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values, Display])
+    Conditions.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values, Display])
+    Statements.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values, Display])
+    Values.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values, Display])
+    Display.checkClick(mouse_x, mouse_y, mouse_click, [Conditions, Statements, Events, Values, Display])
 
     commands = run_btn.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
     commands = stop_btn.checkClick(commands, mouse_x, mouse_y, mouse_click, mouse_release)
@@ -186,10 +204,11 @@ def showDisplay():
     Conditions.show()
     Statements.show()
     Values.show()
+    Display.show()
 
 def scroll():
     global scr, doScroll, last_scr
-    scr = last_scr
+    scr /= 2
     if(mouse_x > 510 and mouse_x < 530 and mouse_y < 580 and mouse_y > 40 or doScroll):
         pygame.draw.rect(gameDisplay,(235,235,235),(520,40,10,540))
         if(mouse_click):
@@ -207,7 +226,6 @@ def scroll():
     if(scr >490):
         scr = 490
     pygame.draw.rect(gameDisplay,(210,210,210),(520,50 + scr,10,30))
-    last_scr = scr
     scr *= 2
 while not crashed:
     time_delta = clock.tick(60)/1000.0
